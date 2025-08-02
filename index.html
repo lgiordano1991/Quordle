@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>QUORDLE</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiUXVvcmRsZSIsInNob3J0X25hbWUiOiJRdW9yZGxlIiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwMDAwMDAiLCJ0aGVtZV9jb2xvciI6IiMwMGZmZmYiLCJpY29ucyI6W3sic3JjIjoiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCM2FXUjBhRDBpTWpRaUlHaGxhV2RvZEQwaU1qUWlJSFpwWlhkQ2IzZzlJakFnTUNBeU5DQXlOQ0lnZUcxc2JuTTlJbWgwZEhBNkx5OTNkM2N1ZHpNdWIzSm5Mekl3TURBdmMzWm5JaUErUEhKbFkzUWdkMmxrZEdnOUlqSTBJaUJvWldsbmFIUTlJakkwSWlCbWFXeHNQU0lqTURCbVptWm1JaUF2UGp3dmMzWm5QZz09Iiwic2l6ZXMiOiIyNHgyNCIsInR5cGUiOiJpbWFnZS9zdmcreG1sIn1dfQ==">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00ffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Cyberpunk background effects */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, #8b5cf6 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, #ec4899 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, #00ffff 0%, transparent 50%);
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        .container {
+            padding: 10px;
+            max-width: 100vw;
+            margin: 0 auto;
+        }
+
+        .difficulty-selector {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .difficulty-title {
+            color: #ec4899;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .difficulty-btn:active {
+            transform: scale(0.95);
+        }
+
+        .difficulty-btn.active {
+            background: #00ffff;
+            color: #000;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+
+        .difficulty-btn.natalie {
+            background: linear-gradient(45deg, #ff0000, #ff6600, #ffff00, #00ff00, #0000ff, #8000ff);
+            border: 1px solid #ff0000;
+            color: white;
+            animation: rainbow-pulse 2s infinite;
+        }
+
+        .difficulty-btn.natalie.active {
+            background: linear-gradient(45deg, #ff0000, #ff6600, #ffff00, #00ff00, #0000ff, #8000ff);
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+        }
+
+        @keyframes rainbow-pulse {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3) saturate(1.2); }
+        }
+
+        .title {
+            font-size: clamp(24px, 8vw, 48px);
+            font-weight: bold;
+            background: linear-gradient(45deg, #00ffff, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .attempts-display {
+            background: rgba(139, 92, 246, 0.3);
+            border: 1px solid #8b5cf6;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .new-game-btn {
+            background: linear-gradient(45deg, #8b5cf6, #ec4899);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .new-game-btn:active {
+            transform: scale(0.95);
+        }
+
+        .hints-section {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ffff;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .hints-title {
+            color: #ec4899;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .hints-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .hint-box {
+            background: rgba(139, 92, 246, 0.3);
+            border: 1px solid #8b5cf6;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+
+        .grids-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .word-grid {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #8b5cf6;
+            border-radius: 15px;
+            padding: 10px;
+        }
+
+        .grid-title {
+            text-align: center;
+            font-weight: bold;
+            color: #00ffff;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            border: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: clamp(12px, 3vw, 16px);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            background: #000;
+        }
+
+        .cell.correct {
+            background: #00ffff;
+            border-color: #00ffff;
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .cell.partial {
+            background: #8b5cf6;
+            border-color: #8b5cf6;
+            color: white;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+
+        .cell.wrong {
+            background: #4b5563;
+            border-color: #4b5563;
+            color: #9ca3af;
+        }
+
+        .cell.current {
+            border-color: #ec4899;
+            background: rgba(236, 72, 153, 0.2);
+            color: #ec4899;
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.3);
+        }
+
+        .input-section {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .input-display {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .input-cell {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #00ffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            border-radius: 8px;
+            background: rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+        }
+
+        .keyboard {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .keyboard-row {
+            display: flex;
+            gap: 3px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .key {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 12px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-size: 14px;
+            min-width: 30px;
+            flex: 1;
+            max-width: 50px;
+        }
+
+        .key.special {
+            flex: 1.5;
+            max-width: 80px;
+            background: linear-gradient(45deg, #8b5cf6, #ec4899);
+            border-color: #8b5cf6;
+            color: white;
+        }
+
+        .key:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+
+        .key.used-correct {
+            background: #00ffff;
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .key.used-partial {
+            background: #8b5cf6;
+            color: white;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+
+        .key.used-wrong {
+            background: #4b5563;
+            color: #9ca3af;
+            border-color: #4b5563;
+        }
+
+        .message-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .message {
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* PWA install prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #8b5cf6, #ec4899);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1000;
+            font-weight: bold;
+        }
+
+        .install-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+            
+            .hints-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 5px;
+            }
+            
+            .hint-box {
+                padding: 8px;
+                font-size: 16px;
+            }
+            
+            .grids-container {
+                gap: 8px;
+            }
+            
+            .word-grid {
+                padding: 8px;
+            }
+            
+            .key {
+                padding: 10px 6px;
+                font-size: 12px;
+                min-width: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">QUORDLE</h1>
+            <div class="difficulty-selector">
+                <div class="difficulty-title">DIFFICULTY:</div>
+                <div class="difficulty-buttons">
+                    <button class="difficulty-btn active" onclick="setDifficulty('easy')">EASY</button>
+                    <button class="difficulty-btn" onclick="setDifficulty('medium')">MEDIUM</button>
+                    <button class="difficulty-btn" onclick="setDifficulty('hard')">HARD</button>
+                    <button class="difficulty-btn natalie" onclick="setDifficulty('natalie')">NATALIE</button>
+                </div>
+            </div>
+            <div class="game-info">
+                <div class="attempts-display" id="attempts">ATTEMPTS: 1/9</div>
+                <button class="new-game-btn" onclick="newGame()">NEW GAME</button>
+            </div>
+        </div>
+
+        <div class="hints-section">
+            <div class="hints-title">DESCENDING HINTS_</div>
+            <div class="hints-grid">
+                <div class="hint-box" id="hint-0">?????</div>
+                <div class="hint-box" id="hint-1">?????</div>
+                <div class="hint-box" id="hint-2">?????</div>
+                <div class="hint-box" id="hint-3">?????</div>
+            </div>
+        </div>
+
+        <div class="grids-container">
+            <div class="word-grid">
+                <div class="grid-title">SECTOR_01</div>
+                <div class="grid" id="grid-0"></div>
+            </div>
+            <div class="word-grid">
+                <div class="grid-title">SECTOR_02</div>
+                <div class="grid" id="grid-1"></div>
+            </div>
+            <div class="word-grid">
+                <div class="grid-title">SECTOR_03</div>
+                <div class="grid" id="grid-2"></div>
+            </div>
+            <div class="word-grid">
+                <div class="grid-title">SECTOR_04</div>
+                <div class="grid" id="grid-3"></div>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-display" id="inputDisplay"></div>
+        </div>
+
+        <div class="keyboard">
+            <div class="keyboard-row">
+                <button class="key" onclick="handleKey('Q')">Q</button>
+                <button class="key" onclick="handleKey('W')">W</button>
+                <button class="key" onclick="handleKey('E')">E</button>
+                <button class="key" onclick="handleKey('R')">R</button>
+                <button class="key" onclick="handleKey('T')">T</button>
+                <button class="key" onclick="handleKey('Y')">Y</button>
+                <button class="key" onclick="handleKey('U')">U</button>
+                <button class="key" onclick="handleKey('I')">I</button>
+                <button class="key" onclick="handleKey('O')">O</button>
+                <button class="key" onclick="handleKey('P')">P</button>
+            </div>
+            <div class="keyboard-row">
+                <button class="key" onclick="handleKey('A')">A</button>
+                <button class="key" onclick="handleKey('S')">S</button>
+                <button class="key" onclick="handleKey('D')">D</button>
+                <button class="key" onclick="handleKey('F')">F</button>
+                <button class="key" onclick="handleKey('G')">G</button>
+                <button class="key" onclick="handleKey('H')">H</button>
+                <button class="key" onclick="handleKey('J')">J</button>
+                <button class="key" onclick="handleKey('K')">K</button>
+                <button class="key" onclick="handleKey('L')">L</button>
+            </div>
+            <div class="keyboard-row">
+                <button class="key special" onclick="handleKey('ENTER')">ENTER</button>
+                <button class="key" onclick="handleKey('Z')">Z</button>
+                <button class="key" onclick="handleKey('X')">X</button>
+                <button class="key" onclick="handleKey('C')">C</button>
+                <button class="key" onclick="handleKey('V')">V</button>
+                <button class="key" onclick="handleKey('B')">B</button>
+                <button class="key" onclick="handleKey('N')">N</button>
+                <button class="key" onclick="handleKey('M')">M</button>
+                <button class="key special" onclick="handleKey('DELETE')">⌫</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="message-overlay hidden" id="messageOverlay">
+        <div class="message" id="messageText"></div>
+    </div>
+
+    <div class="install-prompt hidden" id="installPrompt">
+        <div>Install QUORDLE as an app!</div>
+        <button class="install-btn" onclick="installApp()">INSTALL</button>
+        <button class="install-btn" onclick="dismissInstall()" style="margin-left: 10px;">LATER</button>
+    </div>
+
+    <script>
+        // Game state
+        let currentAttempt = 0;
+        let currentInput = '';
+        let attempts = [];
+        let gameOver = false;
+        let gameWon = false;
+        const maxAttempts = 9;
+        let keyboardState = {};
+
+        // Difficulty settings
+        let currentDifficulty = 'easy';
+        
+        // Word lists by difficulty
+        const wordLists = {
+            easy: [
+                'HOUSE', 'LIGHT', 'MOUSE', 'BREAD', 'CHAIR', 'HAPPY', 'SMILE', 'DANCE',
+                'HEART', 'PLANT', 'WATCH', 'FIELD', 'GRACE', 'IMAGE', 'JUICE', 'MAGIC',
+                'NIGHT', 'OCEAN', 'QUICK', 'RIVER', 'STORM', 'TRUST', 'VOICE', 'WORLD',
+                'APPLE', 'BEACH', 'CLEAN', 'DREAM', 'EARTH', 'FLAME', 'GREEN', 'LAUGH',
+                'MONEY', 'PEACE', 'SOUND', 'SWEET', 'TIGER', 'WATER', 'YOUNG', 'BRAVE',
+                'CLOUD', 'FRESH', 'GLASS', 'HONEY', 'LIGHT', 'MUSIC', 'PARTY', 'QUIET',
+                'ROUND', 'SHADE', 'THICK', 'UNDER', 'WHEEL', 'SHARP', 'BLOCK', 'CLOTH'
+            ],
+            medium: [
+                'BRAIN', 'CRANE', 'DRIVE', 'GHOST', 'JUDGE', 'KNIFE', 'NOVEL', 'OPERA',
+                'PRIDE', 'ROBOT', 'SCENE', 'THEME', 'VALUE', 'WORTH', 'ZEBRA', 'CIVIC',
+                'DRAMA', 'FROST', 'GLORY', 'HUMOR', 'IVORY', 'JEWEL', 'KRAFT', 'LOGIC',
+                'METAL', 'NORTH', 'ORGAN', 'PROOF', 'QUOTE', 'RADAR', 'SCOPE', 'TORCH',
+                'ULTRA', 'VITAL', 'WHEAT', 'XEROX', 'YACHT', 'ZONAL', 'AGENT', 'BLEND',
+                'COMIC', 'DEPOT', 'ELBOW', 'FIBER', 'GRAPH', 'HOTEL', 'INDEX', 'JOKER'
+            ],
+            hard: [
+                'PSALM', 'WRECK', 'GNOME', 'CHUNK', 'FJORD', 'LYMPH', 'SYNTH', 'CRYPT',
+                'DWARF', 'GLYPH', 'NYMPH', 'SPUNK', 'QUALM', 'ZILCH', 'BLITZ', 'WHIZZ',
+                'FUZZY', 'JAZZY', 'QUIRK', 'SQUAD', 'XERUS', 'ZYMOL', 'AZTEC', 'BOXER',
+                'CRAZE', 'DAZZLE', 'FRIZZ', 'GRUFF', 'HIJAB', 'KAYAK', 'LLAMA', 'MUMMY',
+                'PIZZA', 'QUAIL', 'RAZOR', 'SPITZ', 'TOXIC', 'VEXED', 'WAXEN', 'XENIC',
+                'YOKEL', 'ZULUS', 'ABUZZ', 'BLUFF', 'CRUMB', 'DIZZY', 'EXPAT', 'FJELL'
+            ],
+            natalie: [
+                'CZARS', 'FJORD', 'GLYPH', 'HYMNS', 'JURAT', 'KRUNK', 'LYMPH', 'MYRRH',
+                'NYMPH', 'PSYCH', 'QAJAQ', 'RHYTH', 'SYNTH', 'THYMY', 'URAEI', 'VYGIE',
+                'WRYLY', 'XYSTS', 'YUZUS', 'ZYMES', 'CHYND', 'CRWTH', 'CWMS', 'FYTTE',
+                'GRRRL', 'GYOZA', 'HAJJI', 'JINNI', 'KAPPA', 'LLANO', 'MHORR', 'NGWEE',
+                'OHIAS', 'PWNED', 'QOPHS', 'RYBAT', 'STYMY', 'TAZZA', 'ULEMA', 'VEZIR',
+                'WHAUP', 'XERIC', 'YUKKY', 'ZIZIT', 'AZUKI', 'BEZZY', 'CHAFZ', 'DITZY'
+            ]
+        };
+
+        // Extended word pools for infinite generation
+        const extendedWordPools = {
+            easy: [...wordLists.easy, 'BRAVE', 'CLEAR', 'DRIVE', 'EQUAL', 'FIGHT', 'GIANT', 'HABIT', 'IDEAL', 'JOINT', 'KNIFE', 'LEVEL', 'MAJOR', 'NEVER', 'ORDER', 'PAINT', 'QUEEN', 'RIGHT', 'SLEEP', 'TRAIN', 'UNCLE'],
+            medium: [...wordLists.medium, 'ABOUT', 'BEACH', 'COULD', 'DOUBT', 'EVERY', 'FORUM', 'GROUP', 'HOUSE', 'INPUT', 'JOINT', 'KNOWN', 'LEARN', 'MIGHT', 'NOVEL', 'OTHER', 'POINT', 'QUITE', 'RANGE', 'SHALL', 'THINK'],
+            hard: [...wordLists.hard, 'AFFIX', 'BLUNT', 'CHASM', 'DWELT', 'EPOCH', 'FLAIR', 'GUILD', 'HULKS', 'IVORY', 'JOUST', 'KNELT', 'LUNGE', 'MIDST', 'NOTCH', 'OVERT', 'PLUMB', 'QUOTH', 'REALM', 'SWIFT', 'THUMP'],
+            natalie: [...wordLists.natalie, 'AAHED', 'BUXOM', 'CYLIX', 'DJINN', 'EQUIP', 'FAQIR', 'GIZMO', 'HAPAX', 'IXIAS', 'JAUNT', 'KYLIX', 'LUXES', 'MYNAS', 'NAZIFY', 'OXBOW', 'PYXIS', 'QURSH', 'RYNDS', 'SYZYG', 'TZETZE']
+        };
+
+        let targetWords = [];
+        let usedWordSets = new Set();
+
+        // PWA Support
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installPrompt').classList.remove('hidden');
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    deferredPrompt = null;
+                    document.getElementById('installPrompt').classList.add('hidden');
+                });
+            }
+        }
+
+        function dismissInstall() {
+            document.getElementById('installPrompt').classList.add('hidden');
+        }
+
+        // Initialize game
+        function initGame() {
+            targetWords = getRandomWords(4);
+            createGrids();
+            updateDisplay();
+        }
+
+        function getRandomWords(count) {
+            const pool = extendedWordPools[currentDifficulty];
+            const available = pool.filter(word => {
+                // Create a unique identifier for word combinations
+                const combinations = getCombinations([word], count - 1, pool);
+                return combinations.some(combo => !usedWordSets.has(combo.sort().join(',')));
+            });
+            
+            // If we've used most combinations, reset the used sets
+            if (available.length < count * 2) {
+                usedWordSets.clear();
+            }
+            
+            let selectedWords;
+            let attempts = 0;
+            do {
+                selectedWords = [];
+                const shuffled = [...pool].sort(() => 0.5 - Math.random());
+                
+                for (let i = 0; i < count && i < shuffled.length; i++) {
+                    selectedWords.push(shuffled[i]);
+                }
+                
+                attempts++;
+                if (attempts > 100) break; // Prevent infinite loop
+            } while (selectedWords.length < count || usedWordSets.has(selectedWords.sort().join(',')));
+            
+            // Store this combination as used
+            usedWordSets.add([...selectedWords].sort().join(','));
+            
+            return selectedWords;
+        }
+
+        function getCombinations(current, remaining, pool) {
+            if (remaining === 0) return [current];
+            const combinations = [];
+            pool.forEach(word => {
+                if (!current.includes(word)) {
+                    combinations.push(...getCombinations([...current, word], remaining - 1, pool));
+                }
+            });
+            return combinations;
+        }
+
+        function setDifficulty(difficulty) {
+            currentDifficulty = difficulty;
+            
+            // Update button states
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Show difficulty message
+            const messages = {
+                easy: 'EASY MODE: Common words only',
+                medium: 'MEDIUM MODE: Some tricky words',
+                hard: 'HARD MODE: Challenging vocabulary',
+                natalie: '💀 NATALIE MODE: PURE CHAOS! 💀'
+            };
+            showMessage(messages[difficulty]);
+            
+            // Reset game with new difficulty
+            setTimeout(() => newGame(), 1500);
+        }
+
+        function createGrids() {
+            for (let gridIndex = 0; gridIndex < 4; gridIndex++) {
+                const grid = document.getElementById(`grid-${gridIndex}`);
+                grid.innerHTML = '';
+                
+                for (let row = 0; row < maxAttempts; row++) {
+                    for (let col = 0; col < 5; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.id = `cell-${gridIndex}-${row}-${col}`;
+                        grid.appendChild(cell);
+                    }
+                }
+            }
+        }
+
+        function handleKey(key) {
+            if (gameOver) return;
+
+            if (key === 'ENTER') {
+                if (currentInput.length === 5) {
+                    submitGuess();
+                } else {
+                    showMessage('Word must be 5 letters long!');
+                }
+            } else if (key === 'DELETE') {
+                if (currentInput.length > 0) {
+                    currentInput = currentInput.slice(0, -1);
+                }
+            } else if (currentInput.length < 5 && /^[A-Z]$/.test(key)) {
+                currentInput += key;
+            }
+
+            updateDisplay();
+        }
+
+        function getLetterState(letter, position, word) {
+            if (word[position] === letter) return 'correct';
+            if (word.includes(letter)) return 'partial';
+            return 'wrong';
+        }
+
+        function submitGuess() {
+            const newAttemptData = targetWords.map(word => {
+                const letters = currentInput.split('');
+                const states = letters.map((letter, pos) => getLetterState(letter, pos, word));
+                return { letters, states, word };
+            });
+
+            attempts.push(newAttemptData);
+            updateKeyboardState(newAttemptData);
+
+            // Check win condition
+            const allCorrect = newAttemptData.every(attemptData => 
+                attemptData.states.every(state => state === 'correct')
+            );
+
+            if (allCorrect) {
+                gameWon = true;
+                gameOver = true;
+                setTimeout(() => showMessage('🎉 CONGRATULATIONS! YOU WON! 🎉'), 500);
+            } else if (currentAttempt + 1 >= maxAttempts) {
+                gameOver = true;
+                setTimeout(() => showMessage(`GAME OVER! Words were: ${targetWords.join(', ')}`), 500);
+            }
+
+            currentAttempt++;
+            currentInput = '';
+            updateDisplay();
+        }
+
+        function updateKeyboardState(attemptData) {
+            attemptData.forEach(attempt => {
+                attempt.letters.forEach((letter, i) => {
+                    const currentState = keyboardState[letter];
+                    const newState = attempt.states[i];
+                    
+                    if (!currentState || 
+                        newState === 'correct' || 
+                        (newState === 'partial' && currentState !== 'correct')) {
+                        keyboardState[letter] = newState;
+                    }
+                });
+            });
+
+            // Update keyboard visual state
+            document.querySelectorAll('.key').forEach(key => {
+                const letter = key.textContent;
+                if (keyboardState[letter]) {
+                    key.className = `key used-${keyboardState[letter]}`;
+                }
+            });
+        }
+
+        function updateHints() {
+            targetWords.forEach((word, index) => {
+                let hint = '?????';
+                const revealCount = Math.min(currentAttempt, 5);
+                
+                for (let i = 0; i < revealCount; i++) {
+                    const pos = 4 - i;
+                    hint = hint.substring(0, pos) + word[pos] + hint.substring(pos + 1);
+                }
+                
+                document.getElementById(`hint-${index}`).textContent = hint;
+            });
+        }
+
+        function updateDisplay() {
+            // Update attempts counter
+            document.getElementById('attempts').textContent = `ATTEMPTS: ${currentAttempt + 1}/${maxAttempts}`;
+            
+            // Update hints
+            updateHints();
+            
+            // Update input display
+            const inputDisplay = document.getElementById('inputDisplay');
+            inputDisplay.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'input-cell';
+                cell.textContent = currentInput[i] || '';
+                if (i === currentInput.length && !gameOver) {
+                    cell.style.borderColor = '#ec4899';
+                    cell.style.boxShadow = '0 0 10px rgba(236, 72, 153, 0.5)';
+                }
+                inputDisplay.appendChild(cell);
+            }
+            
+            // Update grids
+            for (let gridIndex = 0; gridIndex < 4; gridIndex++) {
+                for (let row = 0; row < maxAttempts; row++) {
+                    for (let col = 0; col < 5; col++) {
+                        const cell = document.getElementById(`cell-${gridIndex}-${row}-${col}`);
+                        
+                        if (row < attempts.length) {
+                            const attemptData = attempts[row][gridIndex];
+                            cell.textContent = attemptData.letters[col];
+                            cell.className = `cell ${attemptData.states[col]}`;
+                        } else if (row === currentAttempt && !gameOver) {
+                            cell.textContent = currentInput[col] || '';
+                            cell.className = col < currentInput.length ? 'cell current' : 'cell';
+                        } else {
+                            cell.textContent = '';
+                            cell.className = 'cell';
+                        }
+                    }
+                }
+            }
+        }
+
+        function showMessage(text) {
+            document.getElementById('messageText').textContent = text;
+            document.getElementById('messageOverlay').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('messageOverlay').classList.add('hidden');
+            }, 3000);
+        }
+
+        function newGame() {
+            currentAttempt = 0;
+            currentInput = '';
+            attempts = [];
+            gameOver = false;
+            gameWon = false;
+            keyboardState = {};
+            
+            targetWords = getRandomWords(4);
+            
+            // Reset keyboard
+            document.querySelectorAll('.key').forEach(key => {
+                if (key.textContent === 'ENTER' || key.textContent === '⌫') {
+                    key.className = 'key special';
+                } else {
+                    key.className = 'key';
+                }
+            });
+            
+            updateDisplay();
+            
+            // Show current words in console for testing (remove in production)
+            console.log(`New ${currentDifficulty.toUpperCase()} game:`, targetWords);
+        }
+
+        // Keyboard event listeners
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toUpperCase();
+            if (key === 'ENTER') {
+                handleKey('ENTER');
+            } else if (key === 'BACKSPACE') {
+                handleKey('DELETE');
+            } else if (/^[A-Z]$/.test(key)) {
+                handleKey(key);
+            }
+        });
+
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Initialize game on load
+        initGame();
+    </script>
+</body>
+</html>
